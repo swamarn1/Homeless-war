@@ -1,6 +1,6 @@
 import pygame
 import sys
-from gameplay.game import Gameplay
+from gameplay.game import Gameplay  # importa a classe, mas não roda o jogo
 
 pygame.init()
 
@@ -39,23 +39,45 @@ class Button:
 class Menu:
     def __init__(self, screen):
         self.screen = screen
+        self.estado = "menu"  # menu | select_players
+
         mid_x = SCREEN_WIDTH // 2 - 160
         start_y = SCREEN_HEIGHT // 2
         gap = 90
 
-        self.background = pygame.image.load("Assets/images/homeless_war_background.jpeg").convert()
-        self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH - 290, SCREEN_HEIGHT ))
+        self.background = pygame.image.load(
+            "Assets/images/homeless_war_background.jpeg"
+        ).convert()
+        self.background = pygame.transform.scale(
+            self.background, (SCREEN_WIDTH - 290, SCREEN_HEIGHT)
+        )
 
-        self.buttons = [
-            Button("Iniciar Jogo", (mid_x, start_y), self.start_game),
+        # --- BOTÕES DO MENU PRINCIPAL ---
+        self.menu_buttons = [
+            Button("Iniciar Jogo", (mid_x, start_y), self.ir_select_players),
             Button("Opções", (mid_x, start_y + gap), self.show_options),
             Button("Sair", (mid_x, start_y + 2 * gap), self.exit_game),
         ]
 
+        # --- BOTÕES DE SELEÇÃO DE JOGADORES ---
+        self.player_buttons = [
+            Button("1 Jogador", (mid_x, start_y), lambda: self.start_game(1)),
+            Button("2 Jogadores", (mid_x, start_y + gap), lambda: self.start_game(2)),
+            Button("Voltar", (mid_x, start_y + 2 * gap), self.voltar_menu),
+        ]
+
         self.running = True
 
-    def start_game(self):
-        game = Gameplay(self.screen)
+    # ===== CALLBACKS =====
+    def ir_select_players(self):
+        self.estado = "select_players"
+
+    def voltar_menu(self):
+        self.estado = "menu"
+
+    def start_game(self, modo_jogo):
+        print(f"Iniciando jogo com {modo_jogo} jogador(es)")
+        game = Gameplay(self.screen, modo_jogo)
         game.loop()
 
     def show_options(self):
@@ -65,12 +87,20 @@ class Menu:
         pygame.quit()
         sys.exit()
 
+    # ===== DRAW =====
     def draw(self):
         self.screen.blit(self.background, (0, 0))
         mouse_pos = pygame.mouse.get_pos()
-        for btn in self.buttons:
-            btn.draw(self.screen, mouse_pos)
 
+        if self.estado == "menu":
+            for btn in self.menu_buttons:
+                btn.draw(self.screen, mouse_pos)
+
+        elif self.estado == "select_players":
+            for btn in self.player_buttons:
+                btn.draw(self.screen, mouse_pos)
+
+    # ===== LOOP =====
     def run(self):
         clock = pygame.time.Clock()
         while self.running:
@@ -80,9 +110,15 @@ class Menu:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.exit_game()
+
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    for btn in self.buttons:
-                        btn.check_click(mouse_pos)
+                    if self.estado == "menu":
+                        for btn in self.menu_buttons:
+                            btn.check_click(mouse_pos)
+
+                    elif self.estado == "select_players":
+                        for btn in self.player_buttons:
+                            btn.check_click(mouse_pos)
 
             self.draw()
             pygame.display.update()
